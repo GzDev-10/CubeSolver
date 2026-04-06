@@ -1,10 +1,11 @@
 """
 Rubik Solver — backend Python + frontend con cubo 3D animato.
 Dipendenze: kociemba  (pip install kociemba)
-Avvio: python server.py
+Avvio locale:  python server.py
+Deploy Render: automatico via render.yaml
 """
 
-import json, threading, webbrowser, os
+import json, os
 from collections import Counter
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import kociemba
@@ -20,7 +21,8 @@ ISTRUZIONI   = {
     'L': '✓ B salvata — ruota altri 90° <b>orario</b> (bianco in alto). <b>ARANCIONE</b> davanti.',
     'D': '✓ L salvata — capovolgi il cubo 180°. <b>GIALLO</b> in alto.',
 }
-PORT       = 7384
+# Render assegna la porta via variabile d'ambiente PORT
+PORT       = int(os.environ.get('PORT', 7384))
 STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
 MIME       = {'.html':'text/html; charset=utf-8','.js':'application/javascript; charset=utf-8',
               '.css':'text/css; charset=utf-8','.json':'application/json','.ico':'image/x-icon'}
@@ -110,10 +112,8 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     os.makedirs(STATIC_DIR, exist_ok=True)
-    server=HTTPServer(('127.0.0.1',PORT),Handler)
-    url=f'http://127.0.0.1:{PORT}'
-    print(f"=== Rubik Solver 3D ===\nServer: {url}\nCtrl+C per uscire\n")
-    threading.Timer(0.5,lambda: webbrowser.open(url)).start()
+    server = HTTPServer(('0.0.0.0', PORT), Handler)
+    print(f"=== Rubik Solver 3D ===\nServer: http://0.0.0.0:{PORT}\n")
     try: server.serve_forever()
     except KeyboardInterrupt: print("\nServer arrestato.")
 

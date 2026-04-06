@@ -274,6 +274,11 @@ const INPUT_ORDER = ['U','F','R','B','L','D'];
 const COLORS = {U:'#f0f0f0',R:'#e02020',F:'#1db954',D:'#f5c800',L:'#ff7300',B:'#1565c0'};
 const NAMES  = {U:'Bianco',R:'Rosso',F:'Verde',D:'Giallo',L:'Arancione',B:'Blu'};
 
+// ── URL backend ───────────────────────────────────────────────────────────────
+// In locale lascia stringa vuota. Dopo il deploy su Render sostituisci con il tuo URL,
+// es: 'https://rubik-solver-api.onrender.com'
+const API_BASE = '';
+
 // descrizioni umane delle mosse
 const MOVE_DESC = {
   U:"Faccia BIANCA in su — ruota in senso orario",   "U'":"Faccia BIANCA in su — ruota in senso antiorario",  U2:"Faccia BIANCA in su — ruota di 180°",
@@ -300,7 +305,7 @@ async function api(path, body) {
   const opts = body
     ? {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}
     : {method:'GET'};
-  return (await fetch(path, opts)).json();
+  return (await fetch(API_BASE + path, opts)).json();
 }
 async function refresh() { state = await api('/state'); render(); }
 
