@@ -21,7 +21,7 @@ ISTRUZIONI   = {
     'D': '✓ L salvata — capovolgi il cubo 180°. <b>GIALLO</b> in alto.',
 }
 PORT       = 7384
-STATIC_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
 MIME       = {'.html':'text/html; charset=utf-8','.js':'application/javascript; charset=utf-8',
               '.css':'text/css; charset=utf-8','.json':'application/json','.ico':'image/x-icon'}
 
@@ -74,25 +74,43 @@ stato=StatoCubo()
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self,fmt,*args): pass
+
+    def _cors(self):
+        self.send_header('Access-Control-Allow-Origin','*')
+        self.send_header('Access-Control-Allow-Methods','GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers','Content-Type, Accept')
+        self.send_header('Access-Control-Max-Age','86400')
+
     def _json(self,obj,code=200):
-        body=json.dumps(obj).encode(); self.send_response(code)
+        body=json.dumps(obj).encode()
+        self.send_response(code)
         self.send_header('Content-Type','application/json')
         self.send_header('Content-Length',str(len(body)))
-        self.send_header('Access-Control-Allow-Origin','*'); self.end_headers(); self.wfile.write(body)
+        self._cors()
+        self.end_headers()
+        self.wfile.write(body)
+
     def _file(self,path):
         ext=os.path.splitext(path)[1]; mime=MIME.get(ext,'application/octet-stream')
         try:
             with open(path,'rb') as f: body=f.read()
-            self.send_response(200); self.send_header('Content-Type',mime)
-            self.send_header('Content-Length',str(len(body))); self.end_headers(); self.wfile.write(body)
-        except FileNotFoundError: self.send_response(404); self.end_headers()
+            self.send_response(200)
+            self.send_header('Content-Type',mime)
+            self.send_header('Content-Length',str(len(body)))
+            self._cors()
+            self.end_headers()
+            self.wfile.write(body)
+        except FileNotFoundError:
+            self.send_response(404); self._cors(); self.end_headers()
+
     def do_GET(self):
         if self.path=='/state': self._json(stato.to_dict()); return
         p=self.path.split('?')[0]
         if p=='/': p='/index.html'
         fp=os.path.join(STATIC_DIR,p.lstrip('/'))
         if os.path.isfile(fp): self._file(fp)
-        else: self.send_response(404); self.end_headers()
+        else: self.send_response(404); self._cors(); self.end_headers()
+
     def do_POST(self):
         length=int(self.headers.get('Content-Length',0))
         body=json.loads(self.rfile.read(length)) if length else {}
@@ -100,13 +118,14 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path=='/undo':     stato.undo()
         elif self.path=='/conferma': stato.conferma_faccia()
         elif self.path=='/reset':    stato.reset()
-        else: self.send_response(404); self.end_headers(); return
+        else:
+            self.send_response(404); self._cors(); self.end_headers(); return
         self._json(stato.to_dict())
+
     def do_OPTIONS(self):
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin','*')
-        self.send_header('Access-Control-Allow-Methods','GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers','Content-Type'); self.end_headers()
+        self.send_response(204)
+        self._cors()
+        self.end_headers()
 
 def main():
     os.makedirs(STATIC_DIR, exist_ok=True)
